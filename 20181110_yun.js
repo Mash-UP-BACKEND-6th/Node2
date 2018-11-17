@@ -21,9 +21,13 @@ fetch(busStopNumberUri)
         
       });
     }))
-    .then(json => (busStopNumbers).forEach((element) => {
-      const busTime = `http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid?ServiceKey=${busStopKey}&arsId=${element}`;
-    }))
+    .then(json => {
+      const busTime = (busStopNumbers).map((element) => {
+      const time = `http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid?ServiceKey=${busStopKey}&arsId=${element}`;
+      fetch(time)
+        .then()
+      })
+    })
     .catch(err => console.log(err));
 
 
