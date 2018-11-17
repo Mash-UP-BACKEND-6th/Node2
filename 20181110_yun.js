@@ -1,49 +1,62 @@
 
-const fetch = require('node-fetch');
-const { parseString } = require('xml2js');
 
-let busStopNumbers = [];
-let busStopName= '홍대입구역';
+const { parseString } = require('xml2js');
+const request = require('sync-request');
+const fetch = require('node-fetch');
+
+const busStopNumbers = [];
+const busStopTimes = {};
+let busStopName = '홍대입구역';
 busStopName = encodeURI(busStopName);
 
 const busStopKey = 'ZToJL71tb0BfKZ6CzMa%2FYCbxw5sVQQks%2F%2BEhWi0%2B29s7PdXcQGYxJGChT%2FRysDxAZWmhSQRT3D6WT90GqkwJJA%3D%3D';
 const busStopNumberUri = `http://ws.bus.go.kr/api/rest/stationinfo/getStationByName?ServiceKey=${busStopKey}&stSrch=${busStopName}`;
 fetch(busStopNumberUri)
-    .then(res => res.text()) // XML
-    .then(xml => parseString(xml, (err, result) => {
-      if(err){
-        console.log(err);
-        return;
-      }
-      result.ServiceResult.msgBody[0].itemList.forEach(element => {
-        // console.log(element.arsId)
-        busStopNumbers.push(element.arsId);
-        
+  .then(res => res.text()) // XML
+  .then(xml => parseString(xml, (err, result) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    result.ServiceResult.msgBody[0].itemList.forEach((element) => {
+      busStopNumbers.push(element.arsId.toString());
+    });
+  }))
+  .then(() => {
+    // console.log(busStopNumbers);
+    busStopNumbers.forEach((element) => {
+      busStopTimes[element] = [];
+      const busTime = `http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid?ServiceKey=${busStopKey}&arsId=${element}`;
+      const {
+        body,
+      } = request('GET', busTime);
+      // body2 = body2.text() // XML
+      parseString(body, (err, result2) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
+        const {
+          itemList,
+        } = result2.ServiceResult.msgBody[0];
+        if (itemList) {
+          itemList.forEach((element2) => {
+            const temp = {};
+            temp[element2.rtNm] = element2.arrmsg1.toString();
+            busStopTimes[element].push(temp);
+            // console.log(element2.arrmsg1);
+            // busStopTimes[element].push(`${element2.rtNm}번 버스 도착 시간은 ${element2.arrmsg1}입니다.`);
+          });
+        }
       });
-    }))
-    .then(json => {
-      const busTime = (busStopNumbers).map((element) => {
-      const time = `http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid?ServiceKey=${busStopKey}&arsId=${element}`;
-      fetch(time)
-        .then()
-      })
-    })
-    .catch(err => console.log(err));
+    });
+  })
+  .then(() => {
+    console.log(busStopTimes);
+  })
+  .catch(err => console.log(err));
 
 
-
-
-// const soyeon = {
-//   age: 25
-//   gender: 'female',
-// }
-
-// console.log(soyeon.age);
-
-// const { age } = soyeon;
-
-
-// .then(res => res.text())
-// .then(function(res){
-//   return res.text();
-// })
+// const a = { b: 1, c: 2 };
+// const { c: d } = a;
+// console.log(d);
